@@ -1,39 +1,29 @@
-//! SigmaOS-dpkg - SigmaOS Component
-//!
-//! Development and system tools for SigmaOS.
-
-use anyhow::Result;
-use log::info;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    pub enabled: bool,
-    pub auto_start: bool,
+pub mod config;
+pub mod control;
+pub mod error;
+pub mod service;
+pub use config::Config;
+pub use control::{ControlFile, DpkgDatabase, PackageStatus};
+pub use error::{ComponentError, Result};
+pub use service::{Service, ServiceStatus};
+pub trait Component {
+    fn name(&self) -> &str;
+    fn version(&self) -> &str;
+    fn initialize(&mut self) -> error::Result<()>;
+    fn shutdown(&mut self) -> error::Result<()>;
+    fn health_check(&self) -> error::Result<()>;
 }
-
-impl Default for Config {
-    fn default() -> Self {
-        Self { enabled: true, auto_start: true }
-    }
+pub struct DpkgComponent { service: service::Service }
+impl DpkgComponent {
+    pub fn new(config: Config) -> Self { Self { service: service::Service::new(config) } }
 }
-
-pub struct dpkg {
-    config: Config,
-}
-
-impl dpkg {
-    pub fn new(config: Config) -> Self {
-        Self { config }
-    }
-
-    pub fn initialize(&mut self) -> Result<()> {
-        info!("Initializing SigmaOS-dpkg");
-        Ok(())
-    }
-
-    pub fn run(&mut self) -> Result<()> {
-        info!("Running SigmaOS-dpkg");
-        Ok(())
+impl Component for DpkgComponent {
+    fn name(&self) -> &str { "sigmaos-dpkg" }
+    fn version(&self) -> &str { env!("CARGO_PKG_VERSION") }
+    fn initialize(&mut self) -> error::Result<()> { self.service.start() }
+    fn shutdown(&mut self) -> error::Result<()> { self.service.stop() }
+    fn health_check(&self) -> error::Result<()> {
+        if self.service.is_running() { Ok(()) }
+        else { Err(error::ComponentError::Service("dpkg not running".to_string())) }
     }
 }
