@@ -3,6 +3,7 @@ pub mod config;
 pub mod control;
 pub mod error;
 pub mod service;
+pub mod status;
 pub use config::Config;
 pub use control::{ControlFile, DpkgDatabase, PackageStatus};
 pub use error::{ComponentError, Result};
